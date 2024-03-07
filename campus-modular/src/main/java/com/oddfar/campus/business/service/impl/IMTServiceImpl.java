@@ -32,11 +32,7 @@ import javax.annotation.PostConstruct;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -84,13 +80,18 @@ public class IMTServiceImpl implements IMTService {
             return mtVersion;
         }
         String url = "https://apps.apple.com/cn/app/i%E8%8C%85%E5%8F%B0/id1600482450";
-        String htmlContent = HttpUtil.get(url);
-        Pattern pattern = Pattern.compile("new__latest__version\">(.*?)</p>", Pattern.DOTALL);
-        Matcher matcher = pattern.matcher(htmlContent);
-        if (matcher.find()) {
-            mtVersion = matcher.group(1);
-            mtVersion = mtVersion.replace("版本 ", "");
+        try {
+            String htmlContent = HttpUtil.get(url);
+            Pattern pattern = Pattern.compile("new__latest__version\">(.*?)</p>", Pattern.DOTALL);
+            Matcher matcher = pattern.matcher(htmlContent);
+            if (matcher.find()) {
+                mtVersion = matcher.group(1);
+                mtVersion = mtVersion.replace("版本 ", "");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        mtVersion = "1.5.9";
         redisCache.setCacheObject("mt_version", mtVersion);
 
         return mtVersion;
@@ -539,8 +540,13 @@ public class IMTServiceImpl implements IMTService {
                 for (Object itemVO : itemVOs) {
                     JSONObject item = JSON.parseObject(itemVO.toString());
                     // 预约时间在24小时内的
-                    if (item.getInteger("status") == 2 && DateUtil.between(item.getDate("reservationTime"), new Date(), DateUnit.HOUR) < 24) {
-                        String logContent = DateUtil.formatDate(item.getDate("reservationTime")) + " 申购" + item.getString("itemName") + "成功";
+                    if (DateUtil.between(item.getDate("reservationTime"), new Date(), DateUnit.HOUR) < 24) {
+                        String logContent = "";
+                        if (item.getInteger("status") == 2) {
+                            logContent = DateUtil.formatDate(item.getDate("reservationTime")) + " 申购" + item.getString("itemName") + "成功";
+                        } else if (item.getInteger("status") == 1) {
+                            logContent = DateUtil.formatDate(item.getDate("reservationTime")) + " 申购" + item.getString("itemName") + "失败";
+                        }
                         IMTLogFactory.reservation(iUser, logContent);
                     }
                 }

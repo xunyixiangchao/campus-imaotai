@@ -1,14 +1,14 @@
 package com.oddfar.campus.business.api;
 
 import cn.hutool.http.HttpUtil;
+import com.alibaba.fastjson2.JSON;
 import com.oddfar.campus.business.entity.ILog;
 import com.oddfar.campus.business.entity.IUser;
 import com.oddfar.campus.common.utils.StringUtils;
 import com.oddfar.campus.framework.manager.AsyncManager;
+import org.springframework.util.CollectionUtils;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TimerTask;
+import java.util.*;
 
 /**
  * @author zhiyuan
@@ -49,15 +49,25 @@ public class PushPlusApi {
         return new TimerTask() {
             @Override
             public void run() {
-                String url = "http://www.pushplus.plus/send";
+                String url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=";
+                url += token;
                 Map<String, Object> map = new HashMap<>();
-                map.put("token", token);
-                map.put("title", title);
-                map.put("content", content);
-                if (StringUtils.isEmpty(template)) {
-                    map.put("template", "html");
-                }
-                HttpUtil.post(url, map);
+//                map.put("token", token);
+//                map.put("title", title);
+//                map.put("content", content);
+//                if (StringUtils.isEmpty(template)) {
+//                    map.put("text", "html");
+//                }
+                map.put("msgtype","text");
+
+                Map<String, Object> text = new HashMap<>();
+                text.put("content",content);
+                text.put("mentioned_list", Collections.singletonList("@all"));
+                map.put("text",text);
+                String req = JSON.toJSONString(map);
+//                System.out.println(req);
+                String post = HttpUtil.post(url, req);
+//                System.out.println(post);
             }
         };
     }
